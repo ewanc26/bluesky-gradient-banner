@@ -160,8 +160,8 @@ cython_debug/
 #.idea/
 
 # generated blob files
-/src/profile_pics/*
-/src/banners/*
+/src/profile_pics*/*
+/src/banners*/*
 
 # generated data files
 .DS_Store
