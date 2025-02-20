@@ -163,5 +163,5 @@ cython_debug/
 /src/blobs/*
 
 # generated data files
-./logs/*
 .DS_Store
+config/generation.json
