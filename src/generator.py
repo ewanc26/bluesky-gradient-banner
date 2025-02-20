@@ -38,9 +38,18 @@ elif args.type == "banner":
 
 font_path = "./config/fonts/madecarvingsoft.ttf"  # Ensure this is a valid TTF font file
 
-# Check and create the folder if it doesn't exist
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+# Function to get an available folder name by incrementing a suffix
+def get_available_folder(base_folder):
+    counter = 1
+    folder = base_folder
+    while os.path.exists(folder):
+        folder = f"{base_folder}_{counter}"
+        counter += 1
+    return folder
+
+# Check and create the folder if it doesn't exist, with incrementation if necessary
+output_folder = get_available_folder(output_folder)
+os.makedirs(output_folder)
 
 # Check if images need to be generated
 images_to_generate = []
