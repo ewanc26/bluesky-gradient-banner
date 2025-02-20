@@ -18,9 +18,42 @@ def interpolate_colour(hour):
         if hours[i] <= hour <= hours[i + 1]:
             t = (hour - hours[i]) / (hours[i + 1] - hours[i])
             c1, c2 = np.array(sky_colours[str(hours[i])]), np.array(sky_colours[str(hours[i + 1])])
-            return tuple((1 - t) * c1 + t * c2)
+            # Return RGBA (with alpha channel set to 255 for full opacity)
+            return tuple((1 - t) * c1 + t * c2) + (255,)
     
-    return sky_colours[str(hour)]
+    # If exact match, return RGBA
+    return tuple(sky_colours[str(hour)]) + (255,)
+
+def create_gradient(hour, width, height):
+    """Generate gradient with fade effect and appropriate RGBA handling."""
+    colour = interpolate_colour(hour)  # This returns an RGBA tuple
+    
+    # Calculate the average color intensity to determine the fade ratio
+    average_colour = np.mean(colour[:3])  # Only considering RGB channels for fade calculation
+    fade_ratio = 0.1 + (0.5 - 0.1) * (1 - average_colour / 255)
+    gradient_height = int(height * fade_ratio)
+    
+    # Calculate monochrome color for the fade effect
+    monochrome_colour = (int(average_colour), int(average_colour), int(average_colour), 255)
+    
+    # Create the gradient with the color transition and alpha fading
+    gradient_rgb = np.vstack(
+        [
+            np.full((height - gradient_height, width, 3), colour[:3], dtype=np.uint8),  # RGB with full opacity
+            np.linspace(colour[:3], monochrome_colour[:3], gradient_height)
+            .astype(np.uint8)
+            .reshape(gradient_height, 1, 3)
+            .repeat(width, axis=1),
+        ]
+    )
+    
+    # Add alpha channel (set to 255 for full opacity for all pixels)
+    alpha_channel = np.full((gradient_rgb.shape[0], gradient_rgb.shape[1], 1), 255, dtype=np.uint8)
+    
+    # Concatenate the RGB gradient with the alpha channel
+    gradient_rgba = np.concatenate((gradient_rgb, alpha_channel), axis=2)
+
+    return gradient_rgba
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Generate profile images or banners.")
@@ -78,37 +111,22 @@ def get_max_font_size(draw, text, font_path, max_width, max_height):
 
 # Generate images for the specified hours
 for hour in images_to_generate:
-    colour = interpolate_colour(hour)
+    # Create gradient
+    gradient = create_gradient(hour, width, height)
     
-    # Calculate text colour based on the background colour
-    text_colour = (
-        min(255, int(255 - colour[0] * 1.2)),
-        min(255, int(255 - colour[1] * 1.2)),
-        min(255, int(255 - colour[2] * 1.2)),
-        200,
-    )
-    
-    # Calculate fade ratio and create gradient
-    average_colour = np.mean(colour)
-    fade_ratio = 0.1 + (0.5 - 0.1) * (1 - average_colour / 255)
-    gradient_height = int(height * fade_ratio)
-    monochrome_colour = (int(average_colour), int(average_colour), int(average_colour))
-    
-    gradient = np.vstack(
-        [
-            np.full((height - gradient_height, width, 3), colour, dtype=np.uint8),
-            np.linspace(colour, monochrome_colour, gradient_height)
-            .astype(np.uint8)
-            .reshape(gradient_height, 1, 3)
-            .repeat(width, axis=1),
-        ]
-    )
-    
-    # Create image with gradient
-    img = Image.fromarray(gradient)
+    # Create image from gradient array
+    img = Image.fromarray(gradient, 'RGBA')
     draw = ImageDraw.Draw(img)
     
-    # Calculate text placement
+    # Text color calculation (adjusting based on background)
+    text_colour = (
+        min(255, int(255 - gradient[0][0][0] * 1.2)),
+        min(255, int(255 - gradient[0][0][1] * 1.2)),
+        min(255, int(255 - gradient[0][0][2] * 1.2)),
+        255,  # Full opacity for text
+    )
+    
+    # Calculate text placement, font size, and draw text
     horizontal_padding = width * 0.1
     usable_width = width - 2 * horizontal_padding
     vertical_padding = height * 0.1
@@ -123,7 +141,7 @@ for hour in images_to_generate:
     position_x = (width - text_width) // 2
     position_y = (height - text_height) // 2
     
-    # Ensure text is within padding and margins
+    # Ensure text fits within padding and margins
     position_x = max(position_x, horizontal_padding)
     position_y = max(position_y, vertical_padding)
     min_bottom_margin = 20
@@ -134,9 +152,9 @@ for hour in images_to_generate:
     text_img = Image.new("RGBA", img.size, (255, 255, 255, 0))
     text_draw = ImageDraw.Draw(text_img)
     text_draw.text((position_x, position_y), name, font=font, fill=text_colour)
-    img = Image.alpha_composite(img.convert("RGBA"), text_img)
+    img = Image.alpha_composite(img, text_img)
     
-    # Add noise to the image
+    # Optionally add noise to image
     noise = np.random.normal(0, 25, (height, width, 3)).astype(np.uint8)
     noise_img = Image.fromarray(noise, mode="RGB")
     img = Image.blend(img.convert("RGB"), noise_img, alpha=0.1)
