@@ -1,13 +1,15 @@
 # Sky Colour Gradient Image Generator
 
-This Python script generates a series of 24 images representing sky colour gradients at each hour of the day. Each image features a gradient transitioning from a specified sky colour to a monochrome shade, with a name overlaid in a contrasting colour. It is inspired by [@dame.is](https://bsky.app/profile/dame.is)'s blog post ['How I made an automated dynamic avatar for my Bluesky profile'](https://dame.is/blog/how-i-made-an-automated-dynamic-avatar-for-my-bluesky-profile). It is meant for the banner image rather than the profile photo because I prefer it.
+This Python script generates a series of 24 images representing sky colour gradients for each hour of the day. Each image features a gradient transitioning from a specified sky colour to a monochrome shade, with a name overlaid in a contrasting colour. This project was inspired by [@dame.is](https://bsky.app/profile/dame.is)'s blog post ['How I made an automated dynamic avatar for my Bluesky profile'](https://dame.is/blog/how-i-made-an-automated-dynamic-avatar-for-my-bluesky-profile).
+
+While primarily designed for generating banner images, the script also supports creating profile images.
 
 ## Features
 
-- **Sky Colour Interpolation**: Smooth transitions between sky colours at different times of the day, based on hourly RGB values.
-- **Monochrome Fade**: Each image has a gradient fading into a monochrome shade derived from the average RGB value.
-- **Image Generation**: Automatically generates 24 images (one for each hour) if they do not already exist.
-- **Text Overlay**: Displays the project's name in a contrasting colour over each image.
+- **Sky Colour Interpolation**: Smooth transitions between sky colours at different times of the day based on hourly RGB values.
+- **Monochrome Fade**: Each image has a gradient that fades into a monochrome shade derived from the average RGB value of the sky colour.
+- **Image Generation**: Automatically generates 24 images (one for each hour) if they do not already exist in the output folder.
+- **Text Overlay**: Displays the project's name in a contrasting colour overlaid at the centre of each image.
 
 ## Requirements
 
@@ -25,7 +27,7 @@ pip install -r requirements.txt
 
 ## Configuration
 
-The script reads configuration settings from a JSON file located at `./config/generation.json`. This file should contain the following structure:
+The script reads configuration settings from a JSON file located at `./config/generation.json`. This file should have the following structure:
 
 ```json
 {
@@ -59,26 +61,30 @@ The script reads configuration settings from a JSON file located at `./config/ge
 }
 ```
 
-- `sky_colours`: A dictionary mapping hours (as strings) to RGB values representing the sky colour at that hour.
+### Configuration Fields
+
+- `sky_colours`: A dictionary mapping hours (as strings) to RGB values representing the sky colour at each hour.
 - `name`: The name to be displayed on each image.
 
 ## Usage
 
 1. Ensure the configuration file is correctly set up as described above.
-2. Place the script in the desired directory.
+2. Place the script in your desired directory.
 3. Run the script using Python:
 
    ```bash
-   python src/generator.py
+   python src/generator.py --type <profile|banner>
    ```
 
-The script will generate 24 images in the `./src/blobs` directory, each named `00.png` through `23.png`, corresponding to each hour of the day, if they don't already exist.
+   - The `--type` argument allows you to choose between generating a **profile** (400x400) or **banner** (1500x500) image.
+
+   The script will generate 24 images (one for each hour) in the `./src/<profile_pics|banners>` directory, if they don't already exist. Images will be named `00.png` through `23.png`, corresponding to each hour of the day.
 
 ## Notes
 
 - The script checks if the output directory exists and creates it if necessary.
 - It checks if each image already exists before attempting to regenerate it.
-- The script uses a specific font located at `./config/fonts/madecarvingsoft.woff2`. Ensure this font file is available or adjust the path as needed.
+- The script uses a specific font located at `./config/fonts/madecarvingsoft.ttf`. Ensure this font file is available or adjust the path as needed.
 - Images are generated with a gradient fading to a monochrome shade based on the average RGB value of the sky colour.
 
 ## License
