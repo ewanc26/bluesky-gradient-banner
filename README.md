@@ -1,6 +1,6 @@
 # Sky Colour Gradient Image Generator
 
-This Python script generates a series of 24 images representing sky colour gradients at each hour of the day. Each image features a gradient transitioning from a specified sky colour to a monochrome shade, with a name overlaid in a contrasting colour.
+This Python script generates a series of 24 images representing sky colour gradients at each hour of the day. Each image features a gradient transitioning from a specified sky colour to a monochrome shade, with a name overlaid in a contrasting colour. It is inspired by [@dame.is](https://bsky.app/profile/dame.is)'s blog post ['How I made an automated dynamic avatar for my Bluesky profile'](https://dame.is/blog/how-i-made-an-automated-dynamic-avatar-for-my-bluesky-profile). It is meant for the banner image rather than the profile photo because I prefer it.
 
 ## Features
 
