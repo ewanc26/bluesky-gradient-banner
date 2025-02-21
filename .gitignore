@@ -162,6 +162,7 @@ cython_debug/
 # generated blob files
 /src/profile_pics*/*
 /src/banners*/*
+/src/custom*/*
 
 # generated data files
 .DS_Store

@@ -18,63 +18,31 @@ def interpolate_colour(hour):
         if hours[i] <= hour <= hours[i + 1]:
             t = (hour - hours[i]) / (hours[i + 1] - hours[i])
             c1, c2 = np.array(sky_colours[str(hours[i])]), np.array(sky_colours[str(hours[i + 1])])
-            # Return RGBA (with alpha channel set to 255 for full opacity)
             return tuple((1 - t) * c1 + t * c2) + (255,)
     
-    # If exact match, return RGBA
     return tuple(sky_colours[str(hour)]) + (255,)
 
 def create_gradient(hour, width, height):
     """Generate gradient with fade effect and appropriate RGBA handling."""
-    colour = interpolate_colour(hour)  # This returns an RGBA tuple
+    colour = interpolate_colour(hour)
     
-    # Calculate the average color intensity to determine the fade ratio
-    average_colour = np.mean(colour[:3])  # Only considering RGB channels for fade calculation
+    average_colour = np.mean(colour[:3])
     fade_ratio = 0.1 + (0.5 - 0.1) * (1 - average_colour / 255)
     gradient_height = int(height * fade_ratio)
     
-    # Calculate monochrome color for the fade effect
     monochrome_colour = (int(average_colour), int(average_colour), int(average_colour), 255)
     
-    # Create the gradient with the color transition and alpha fading
-    gradient_rgb = np.vstack(
-        [
-            np.full((height - gradient_height, width, 3), colour[:3], dtype=np.uint8),  # RGB with full opacity
-            np.linspace(colour[:3], monochrome_colour[:3], gradient_height)
-            .astype(np.uint8)
-            .reshape(gradient_height, 1, 3)
-            .repeat(width, axis=1),
-        ]
-    )
+    gradient_rgb = np.vstack([
+        np.full((height - gradient_height, width, 3), colour[:3], dtype=np.uint8),
+        np.linspace(colour[:3], monochrome_colour[:3], gradient_height)
+        .astype(np.uint8)
+        .reshape(gradient_height, 1, 3)
+        .repeat(width, axis=1),
+    ])
     
-    # Add alpha channel (set to 255 for full opacity for all pixels)
     alpha_channel = np.full((gradient_rgb.shape[0], gradient_rgb.shape[1], 1), 255, dtype=np.uint8)
-    
-    # Concatenate the RGB gradient with the alpha channel
     gradient_rgba = np.concatenate((gradient_rgb, alpha_channel), axis=2)
-
     return gradient_rgba
-
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Generate profile images or banners.")
-parser.add_argument(
-    "--type",
-    choices=["profile", "banner"],
-    required=True,
-    help="Choose to generate 'profile' (400x400) or 'banner' (1500x500) images.",
-)
-args = parser.parse_args()
-
-# Set image dimensions based on type
-if args.type == "profile":
-    width, height = 400, 400
-    output_folder = "./src/profile_pics"
-elif args.type == "banner":
-    width, height = 1500, 500
-    output_folder = "./src/banners"
-
-# Define font path
-font_path = "./config/fonts/madecarvingsoft.ttf"
 
 def get_available_folder(base_folder):
     """Check if the folder already exists, and if so, create a new folder with a counter."""
@@ -84,17 +52,6 @@ def get_available_folder(base_folder):
         folder = f"{base_folder}_{counter}"
         counter += 1
     return folder
-
-# Create the output folder if it doesn't exist
-output_folder = get_available_folder(output_folder)
-os.makedirs(output_folder)
-
-# Determine which hours need image generation
-images_to_generate = []
-for hour in range(24):
-    image_path = f"{output_folder}/{str(hour).zfill(2)}.png"
-    if not os.path.exists(image_path):
-        images_to_generate.append(hour)
 
 def get_max_font_size(draw, text, font_path, max_width, max_height):
     """Calculate the maximum font size that fits within the image dimensions."""
@@ -109,11 +66,56 @@ def get_max_font_size(draw, text, font_path, max_width, max_height):
     
     return font_size - 1
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Generate profile images or banners.")
+parser.add_argument(
+    "-p", "--profile", action="store_true", help="Generate profile image (400x400)."
+)
+parser.add_argument(
+    "-b", "--banner", action="store_true", help="Generate banner image (1500x500)."
+)
+parser.add_argument(
+    "-c", "--custom", action="store_true", help="Generate custom image with custom width and height."
+)
+parser.add_argument("-w", "--width", type=int, help="Custom image width (required with -c).")
+parser.add_argument("-H", "--height", type=int, help="Custom image height (required with -c).")
+args = parser.parse_args()
+
+# Set image dimensions based on the flags
+if args.profile:
+    width, height = 400, 400
+    output_folder = "./src/profile_pics"
+elif args.banner:
+    width, height = 1500, 500
+    output_folder = "./src/banners"
+elif args.custom:
+    if not args.width or not args.height:
+        print("Error: Custom dimensions (-w and -H) are required with the -c flag.")
+        exit(1)
+    width, height = args.width, args.height
+    output_folder = f"./src/custom_{width}x{height}"
+else:
+    print("Error: You must specify either -p, -b, or -c.")
+    exit(1)
+
+# Define font path
+font_path = "./config/fonts/madecarvingsoft.ttf"
+
+# Create output folder
+output_folder = get_available_folder(output_folder)
+os.makedirs(output_folder)
+
+# Determine which hours need image generation
+images_to_generate = []
+for hour in range(24):
+    image_path = f"{output_folder}/{str(hour).zfill(2)}.png"
+    if not os.path.exists(image_path):
+        images_to_generate.append(hour)
+
 # Generate images for the specified hours
 for hour in images_to_generate:
     # Create gradient
     gradient = create_gradient(hour, width, height)
-    
     # Create image from gradient array
     img = Image.fromarray(gradient, 'RGBA')
     draw = ImageDraw.Draw(img)
@@ -164,5 +166,5 @@ for hour in images_to_generate:
     img.save(image_path)
 
 # Print success message
-print(f"{args.type.capitalize()} images generated successfully.")
+print(f"Images generated successfully.")
 print(f"Images saved to: {output_folder}")
